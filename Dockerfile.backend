@@ -1,0 +1,18 @@
+# Dockerfile.backend — FastAPI API server (Stage A intake + status polling).
+# Light: no torch, no Node, no Chromium. Build context = repo root.
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# psycopg[binary] and PyMuPDF ship manylinux wheels, so no apt build deps.
+COPY backend/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# backend/ modules import each other as top-level names (import db, import
+# config, ...), so flatten backend/ contents onto /app and run from there.
+COPY backend/ ./
+
+# Fly injects DATABASE_URL / R2_* / UPSTASH_* as secrets at runtime; there is
+# no .env in the container, so config.py's os.getenv reads them directly.
+EXPOSE 8080
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]

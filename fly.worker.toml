@@ -1,0 +1,9 @@
+app = 'lecture-video-worker'
+primary_region = 'lhr'
+
+[build]
+  dockerfile = 'Dockerfile.worker'
+
+[[vm]]
+  size = 'shared-cpu-2x'
+  memory = '4gb'

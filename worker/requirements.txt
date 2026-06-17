@@ -1,0 +1,12 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+psycopg[binary,pool]==3.2.3
+pymupdf==1.24.10
+python-dotenv==1.0.1
+anthropic==0.102.0
+Pillow==11.0.0
+kokoro==0.9.4
+pydub==0.25.1
+torch==2.12.0+cpu
+boto3>=1.36.0
+upstash-redis>=1.1.0

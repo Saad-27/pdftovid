@@ -1,0 +1,23 @@
+# Secrets — never into an image
+.env
+.env.*
+*.key
+key.txt
+
+# Python local artifacts
+.git
+.venv
+backend/.venv
+**/__pycache__
+*.pyc
+
+# Node / build artifacts — reinstalled fresh inside the image
+**/node_modules
+frontend/dist
+renderer/out
+renderer/public/*/
+
+# Local job working dirs (test PDFs, extracted content, rendered MP4s)
+/tmp/lecture_video_jobs
+jobs
+output

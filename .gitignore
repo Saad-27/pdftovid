@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+build/
+.vite/
+
+# Remotion cache and renders
+.remotion/
+renderer/out/
+
+# Environment / secrets
+.env
+.env.local
+*.key
+key.txt
+
+# Job working directories (test outputs, may contain PDFs / extracted content)
+/tmp/lecture_video_jobs/
+jobs/
+output/
+
+# Editor / OS noise
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+renderer/public/*/
+!renderer/public/.gitkeep
+
+# Logs
+*.log

@@ -1,0 +1,52 @@
+# Dockerfile.worker — background pipeline (Stages B–G). Heavy image:
+# Python (Kokoro TTS, torch-cpu, PyMuPDF) + Node (Remotion) + ffmpeg +
+# headless Chromium. Build context = repo root.
+FROM python:3.11-slim
+
+# ---- System deps ----
+# ffmpeg: Remotion encoder + our faststart pass.
+# espeak-ng: misaki/Kokoro g2p fallback for out-of-dictionary words.
+# The lib list: shared libraries headless Chromium links against
+# (from the 2026-05-20 handoff; slim images don't ship these).
+# curl/gnupg: to add the NodeSource repo for Node 20.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ffmpeg espeak-ng curl gnupg ca-certificates \
+        libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+        libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+        libgbm1 libpango-1.0-0 libcairo2 libasound2 libatspi2.0-0 \
+        libgtk-3-0 libx11-xcb1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---- Node 20 (for Remotion) ----
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# ---- Python deps (slow; cache before app code) ----
+COPY worker/requirements.txt ./worker/requirements.txt
+RUN pip install --no-cache-dir -r worker/requirements.txt
+
+# ---- Pre-download the ~500 MB Kokoro model into the image ----
+# Instantiate both language pipelines the voices use (a=US, b=UK) so the
+# first real job doesn't stall on a network download. Non-fatal: a failure
+# here just falls back to downloading on first job.
+RUN python -c "from kokoro import KPipeline; KPipeline(lang_code='a'); KPipeline(lang_code='b')" || \
+    echo "WARN: Kokoro prefetch failed; first job will download the model."
+
+# ---- Node deps for the renderer (cache on package files alone) ----
+COPY renderer/package.json renderer/package-lock.json ./renderer/
+RUN cd renderer && npm ci
+
+# ---- Bake in Chromium so the first render doesn't download it mid-job ----
+RUN cd renderer && npx remotion browser ensure
+
+# ---- App code last (most volatile): worker/ + shared backend/ + renderer/ ----
+COPY backend/ ./backend/
+COPY worker/ ./worker/
+COPY renderer/ ./renderer/
+
+# Ephemeral per-machine scratch dir; JOBS_DIR defaults to
+# /tmp/lecture_video_jobs in config.py. Fly injects secrets at runtime.
+CMD ["python", "-m", "worker.run"]
