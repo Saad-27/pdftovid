@@ -49,8 +49,3 @@ Seven stages with a Postgres job queue in the middle. A job comes in, a worker c
 7. **Render** with Remotion (React, but for video). It composites the layouts, fades bullets in, lines audio up to visuals, then ffmpeg muxes the final MP4.
 
    
-## Things I actually sweated:
- 
-- **The API key touches nothing it shouldn't.** Bring-your-own-key, never written to the database or to disk, scrubbed out of logs. In production it lived in Redis on a one-hour TTL and got read once then deleted by the worker the moment it needed it.
-- **Remotion couldn't see the audio files** and quietly rendered silent video. The fix was symlinking each job's folder into the renderer's public directory so Remotion's own static-file server could serve the assets, namespaced per job so concurrent renders don't trample each other.
-- **The queue is just Postgres**, `SELECT ... FOR UPDATE SKIP LOCKED`. Two workers can pull from it without ever grabbing the same job, and you get a real "2nd in line" position out of it. No Celery, no broker, none of that.
